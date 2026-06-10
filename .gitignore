@@ -1,0 +1,18 @@
+# Сырые выгрузки — кэш, переcкачивается скриптами ingest (раздел 3.3 брифа)
+data/raw/*
+!data/raw/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Виртуальное окружение
+.venv/
+venv/
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/

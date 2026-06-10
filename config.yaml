@@ -1,0 +1,61 @@
+# Конфигурация проекта: анализ влияния погоды на токосъём (СЛД Кандалакша).
+# Все пороги риска, координаты и параметры выгрузки задаются здесь, не хардкодятся в коде.
+# См. PROJECT_BRIEF.md — описание архитектуры и принятых решений.
+
+station:
+  name: "Кандалакша"
+  wmo_id: 22217
+  latitude: 67.15123
+  longitude: 32.41284
+  elevation_m: 29
+  timezone: "Europe/Moscow"
+
+period:
+  # Период вертикального среза (PROJECT_BRIEF.md, раздел 5) — один контрольный год.
+  start_date: "2024-01-01"
+  end_date: "2024-12-31"
+  # Дата фактической выгрузки данных — фиксируется при первом запуске ingest
+  # для воспроизводимости (раздел 3.1 брифа). Заполняется скриптом, не вручную.
+  download_date: null
+
+# После вертикального среза (этапы 1-5) период будет расширен до 10-15 лет.
+# full_period:
+#   start_date: "2011-01-01"
+#   end_date: "2025-12-31"
+
+sources:
+  era5:
+    provider: "open-meteo"
+    base_url: "https://archive-api.open-meteo.com/v1/archive"
+    hourly_variables:
+      - temperature_2m
+      - relative_humidity_2m
+      - precipitation
+      - snowfall
+      - pressure_msl
+      - wind_speed_10m
+      - wind_gusts_10m
+    timezone: "Europe/Moscow"
+  station:
+    provider: "rp5"  # альтернатива: meteo.ru (АИСОРИ ВНИИГМИ-МЦД)
+    wmo_id: 22217
+    # путь(и) к сырым файлам выгрузки (CSV/Excel) заполняются на этапе ingest
+
+paths:
+  raw_dir: "data/raw"
+  clean_dir: "data/clean"
+  db_path: "data/clean/climate_kandalaksha.db"
+
+# Критерии критических погодных условий (ТЗ п.10 / бриф раздел 3.5).
+# Стартовые значения — будут уточнены по результатам литературного обзора.
+risk_thresholds:
+  temperature_low_c: -25.0      # температура ниже -25°C -> высокий риск
+  zero_crossing: true           # переход температуры через 0°C -> высокий риск
+  wind_speed_high_ms: 15.0      # скорость/порывы ветра > 15 м/с -> высокий риск
+  humidity_high_pct: 90.0       # влажность > 90% при отрицательной температуре -> критический риск
+  # Гололёд и мокрый снег определяются приоритетно по WW-кодам станции (ww_code).
+  # Если код недоступен — прокси-критерий (помечается отдельно, см. раздел 3.1 брифа).
+  wet_snow_proxy:
+    temp_min_c: -2.0
+    temp_max_c: 2.0
+    humidity_min_pct: 90.0
